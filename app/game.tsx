@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Player from "@/app/components/player";
-import Enemy from "@/app/components/enemy";
 import Bullet from "@/app/components/bullet";
 import RangeIndicator from "@/app/components/range-indicator";
 import {
@@ -10,6 +9,7 @@ import {
   generateRandomPosition,
   getEnemyPosition,
   updatePlayerPositionCache,
+  createEnemy,
 } from "./actions/enemy-actions";
 import {
   BulletType,
@@ -24,6 +24,7 @@ import { trackEnemiesInRange } from "./actions/range-detection";
 import GameUserInterface from "./components/game-user-interface";
 import type { GameState } from "./types/game-state";
 import { PLAYER, BULLET, ENEMY } from "./config/game-config";
+import { BasicEnemy, FastEnemy } from "./components/enemies";
 
 interface GameProps {
   onEndGame: (score: number) => void;
@@ -280,24 +281,18 @@ export default function Game({ onEndGame }: GameProps) {
     if (!gameActive || gameOver) return;
 
     const spawnInterval = setInterval(() => {
-      const position = generateRandomPosition();
-      const id = Date.now() + Math.random();
-
+      const newEnemy = createEnemy();
       console.log(
-        `Spawning enemy: id=${id}, position=(${Math.round(
-          position.x
-        )}, ${Math.round(position.y)})`
+        `Spawning ${newEnemy.type} enemy: id=${
+          newEnemy.id
+        }, position=(${Math.round(newEnemy.position.x)}, ${Math.round(
+          newEnemy.position.y
+        )})`
       );
 
       setState((prev) => ({
         ...prev,
-        enemies: [
-          ...prev.enemies,
-          {
-            id,
-            position,
-          },
-        ],
+        enemies: [...prev.enemies, newEnemy],
       }));
     }, ENEMY.SPAWN_INTERVAL);
 
@@ -331,10 +326,14 @@ export default function Game({ onEndGame }: GameProps) {
                 ? isInRange(position.x, position.y, PLAYER.SHOOTING_RANGE)
                 : false;
 
+              const EnemyComponent =
+                enemy.type === "FAST" ? FastEnemy : BasicEnemy;
+
               return (
                 <div key={enemy.id} className="relative">
-                  <Enemy
+                  <EnemyComponent
                     id={enemy.id}
+                    type={enemy.type}
                     initialPosition={enemy.position}
                     targetPosition={{ x: 0, y: 0 }}
                   />

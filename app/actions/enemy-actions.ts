@@ -1,8 +1,9 @@
-import { GAME_AREA, PERFORMANCE } from "../config/game-config";
+import { GAME_AREA, PERFORMANCE, ENEMY_TYPES } from "../config/game-config";
 
 // Types
 export interface EnemyType {
   id: number;
+  type: keyof typeof ENEMY_TYPES;
   position: {
     x: number;
     y: number;
@@ -46,6 +47,27 @@ export const updatePlayerPositionCache = () => {
 };
 
 /**
+ * Randomly selects an enemy type based on spawn weights
+ */
+export const getRandomEnemyType = (): keyof typeof ENEMY_TYPES => {
+  const totalWeight = Object.values(ENEMY_TYPES).reduce(
+    (sum, type) => sum + type.SPAWN_WEIGHT,
+    0
+  );
+
+  let random = Math.random() * totalWeight;
+
+  for (const [type, config] of Object.entries(ENEMY_TYPES)) {
+    random -= config.SPAWN_WEIGHT;
+    if (random <= 0) {
+      return type as keyof typeof ENEMY_TYPES;
+    }
+  }
+
+  return "BASIC"; // Fallback to basic type
+};
+
+/**
  * Generates a random position outside the visible screen area
  */
 export const generateRandomPosition = () => {
@@ -58,6 +80,17 @@ export const generateRandomPosition = () => {
   return {
     x: Math.cos(angle) * distance,
     y: Math.sin(angle) * distance,
+  };
+};
+
+/**
+ * Creates a new enemy with random type
+ */
+export const createEnemy = (): EnemyType => {
+  return {
+    id: Date.now() + Math.random(),
+    type: getRandomEnemyType(),
+    position: generateRandomPosition(),
   };
 };
 

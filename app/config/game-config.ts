@@ -8,6 +8,28 @@ export const GAME_AREA = {
   SPAWN_DISTANCE_MULTIPLIER: 0.75,
 } as const;
 
+// Enemy Types Configuration
+export const ENEMY_TYPES = {
+  BASIC: {
+    /** Basic enemy properties */
+    TYPE: "basic",
+    COLOR: "bg-red-500",
+    BORDER_COLOR: "border-red-300",
+    SPEED: 120,
+    POINTS: 10,
+    SPAWN_WEIGHT: 70, // 70% chance to spawn this type
+  },
+  FAST: {
+    /** Fast enemy properties */
+    TYPE: "fast",
+    COLOR: "bg-yellow-500",
+    BORDER_COLOR: "border-yellow-300",
+    SPEED: 200,
+    POINTS: 20,
+    SPAWN_WEIGHT: 30, // 30% chance to spawn this type
+  },
+} as const;
+
 // Player Configuration
 export const PLAYER = {
   /** Maximum distance at which the player can shoot enemies

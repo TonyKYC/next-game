@@ -1,31 +1,35 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { ENEMY } from "../config/game-config";
+import { ENEMY, ENEMY_TYPES } from "../../config/game-config";
 
-interface EnemyProps {
+export interface BaseEnemyProps {
   id: number;
+  type: keyof typeof ENEMY_TYPES;
   initialPosition: { x: number; y: number };
   targetPosition: { x: number; y: number };
 }
 
-export default function Enemy({
+export default function BaseEnemy({
   id,
+  type,
   initialPosition,
   targetPosition,
-}: EnemyProps) {
+  children,
+}: BaseEnemyProps & { children?: React.ReactNode }) {
+  // Get enemy configuration based on type
+  const enemyConfig = ENEMY_TYPES[type];
+
   // Calculate distance to target
   const dx = targetPosition.x - initialPosition.x;
   const dy = targetPosition.y - initialPosition.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
 
   // Calculate duration based on speed (distance / speed = time)
-  const duration = distance / ENEMY.MOVEMENT_SPEED;
+  const duration = distance / enemyConfig.SPEED;
 
   return (
     <motion.div
       id={`enemy-${id}`}
-      className="absolute bg-red-500 border border-red-300"
+      className={`absolute border ${enemyConfig.COLOR} ${enemyConfig.BORDER_COLOR}`}
       style={{
         width: ENEMY.SIZE.WIDTH,
         height: ENEMY.SIZE.HEIGHT,
@@ -46,6 +50,8 @@ export default function Enemy({
         y: { duration, ease: "linear" },
         rotate: { duration: 2, repeat: Number.POSITIVE_INFINITY },
       }}
-    />
+    >
+      {children}
+    </motion.div>
   );
 }
