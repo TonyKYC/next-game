@@ -1,30 +1,27 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Player from "@/app/components/player";
 import Bullet from "@/app/components/bullet";
+import Player from "@/app/components/player";
 import RangeIndicator from "@/app/components/range-indicator";
-import {
-  EnemyType,
-  generateRandomPosition,
-  getEnemyPosition,
-  updatePlayerPositionCache,
-  createEnemy,
-} from "./actions/enemy-actions";
+import { useEffect, useRef, useState } from "react";
 import {
   BulletType,
+  checkBulletCollisions,
   createBullet,
   findClosestEnemyInRange,
-  checkBulletCollisions,
 } from "./actions/bullet-actions";
-import { createInitialGameState, resetGameState } from "./actions/game-state";
-import { isInRange } from "./lib/utils";
 import { checkPlayerCollisions } from "./actions/collision-detection";
+import {
+  createEnemy,
+  getEnemyPosition,
+  updatePlayerPositionCache,
+} from "./actions/enemy-actions";
+import { createInitialGameState, resetGameState } from "./actions/game-state";
 import { trackEnemiesInRange } from "./actions/range-detection";
-import GameUserInterface from "./components/game-user-interface";
-import type { GameState } from "./types/game-state";
-import { PLAYER, BULLET, ENEMY } from "./config/game-config";
 import { BasicEnemy, FastEnemy } from "./components/enemies";
+import GameUserInterface from "./components/game-ui";
+import { BULLET, ENEMY, PLAYER } from "./config/game-config";
+import { isInRange } from "./lib/utils";
 
 interface GameProps {
   onEndGame: (score: number) => void;
