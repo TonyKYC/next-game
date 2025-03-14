@@ -1,11 +1,12 @@
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
  * Merges multiple Tailwind CSS classes
  */
-export const cn = (...classes: string[]) => {
-  return twMerge(classes);
-};
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 /**
  * Calculates the distance between two points
