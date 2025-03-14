@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Player from "@/components/player";
-import Enemy from "@/components/enemy";
-import Bullet from "@/components/bullet";
-import RangeIndicator from "@/components/range-indicator";
+import Player from "@/app/components/player";
+import Enemy from "@/app/components/enemy";
+import Bullet from "@/app/components/bullet";
+import RangeIndicator from "@/app/components/range-indicator";
 import {
   EnemyType,
   generateRandomPosition,
@@ -18,11 +18,17 @@ import {
   checkBulletCollisions,
 } from "./actions/bullet-actions";
 import { createInitialGameState, resetGameState } from "./actions/game-state";
-import { isInRange } from "./actions/utils";
+import { isInRange } from "./lib/utils";
 import { checkPlayerCollisions } from "./actions/collision-detection";
 import { trackEnemiesInRange } from "./actions/range-detection";
+import GameUserInterface from "./components/game-user-interface";
+import type { GameState } from "./types/game-state";
 
-export default function Game() {
+interface GameProps {
+  onEndGame: (score: number) => void;
+}
+
+export default function Game({ onEndGame }: GameProps) {
   // Define the shooting range
   const SHOOTING_RANGE = 200;
   // Define the cooldown between shots (in ms)
@@ -54,7 +60,7 @@ export default function Game() {
     stateRef.current = state;
   }, [state]);
 
-  // Initialize game area size
+  // Initialize game area size and start the game
   useEffect(() => {
     function updateSize() {
       if (gameAreaRef.current) {
@@ -70,14 +76,30 @@ export default function Game() {
 
     updateSize();
     window.addEventListener("resize", updateSize);
+
+    // Start the game automatically when component mounts
+    setState((prev) => ({
+      ...resetGameState(prev),
+      gameActive: true,
+    }));
+
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Start game
-  const startGame = () => {
-    setState((prev) => resetGameState(prev));
-    console.log("Game started");
+  // Add handleEndGame function
+  const handleEndGame = () => {
+    if (gameActive) {
+      setState((prev) => ({ ...prev, gameActive: false, gameOver: true }));
+      onEndGame(score);
+    }
   };
+
+  // Handle game over condition
+  useEffect(() => {
+    if (gameOver) {
+      handleEndGame();
+    }
+  }, [gameOver, score]);
 
   // Game loop using requestAnimationFrame for smoother updates
   useEffect(() => {
@@ -286,70 +308,16 @@ export default function Game() {
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
-      <div className="absolute top-4 left-0 right-0 z-20 flex justify-center gap-4">
-        <div className="text-white text-xl bg-gray-800/70 px-4 py-2 rounded">
-          Score: {score}
-        </div>
-        {!gameActive && (
-          <button
-            onClick={startGame}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Start Game
-          </button>
-        )}
-        {gameOver && (
-          <div className="text-red-500 text-xl font-bold bg-gray-800/70 px-4 py-2 rounded">
-            Game Over!
-          </div>
-        )}
+      <GameUserInterface
+        state={{
+          ...state,
+          fpsCount: fpsRef.current,
+        }}
+        onEndGame={handleEndGame}
+        shootingRange={SHOOTING_RANGE}
+      />
 
-        {/* Debug info */}
-        {gameActive && (
-          <div className="text-white text-sm bg-gray-800/70 px-4 py-2 rounded max-w-md overflow-auto">
-            <div>
-              Enemies: {enemies.length} | Bullets: {bullets.length} | FPS:{" "}
-              {fpsRef.current}
-            </div>
-            <div>
-              In Range:{" "}
-              <span
-                className={
-                  debugInfo.enemiesInRange > 0 ? "text-green-400 font-bold" : ""
-                }
-              >
-                {debugInfo.enemiesInRange}
-              </span>{" "}
-              | Closest:{" "}
-              <span
-                className={
-                  debugInfo.closestEnemyDistance <= SHOOTING_RANGE
-                    ? "text-green-400 font-bold"
-                    : ""
-                }
-              >
-                {Math.round(debugInfo.closestEnemyDistance)}px
-              </span>{" "}
-              | Range: {SHOOTING_RANGE}px
-            </div>
-            <div className="text-xs mt-1">
-              {debugInfo.enemyPositions.map((e) => (
-                <div
-                  key={e.id}
-                  className={
-                    e.distance <= SHOOTING_RANGE ? "text-green-400" : ""
-                  }
-                >
-                  Enemy {e.id.toString().slice(-4)}: x={Math.round(e.x)}, y=
-                  {Math.round(e.y)}, dist={Math.round(e.distance)}
-                  {e.distance <= SHOOTING_RANGE ? " (IN RANGE)" : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
+      {/* Game Area */}
       <div
         ref={gameAreaRef}
         className="relative w-full h-full overflow-hidden flex items-center justify-center"
@@ -360,7 +328,6 @@ export default function Game() {
             <Player />
 
             {enemies.map((enemy) => {
-              // Get enemy position for visual indicators
               const position = getEnemyPosition(enemy.id);
               const inRange = position
                 ? isInRange(position.x, position.y, SHOOTING_RANGE)
@@ -371,7 +338,7 @@ export default function Game() {
                   <Enemy
                     id={enemy.id}
                     initialPosition={enemy.position}
-                    targetPosition={{ x: 0, y: 0 }} // Target is always the player at center (0,0)
+                    targetPosition={{ x: 0, y: 0 }}
                   />
                   {inRange && (
                     <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
@@ -382,54 +349,15 @@ export default function Game() {
               );
             })}
 
-            {/* Render bullets */}
             {bullets.map((bullet) => (
               <Bullet
                 key={bullet.id}
                 id={bullet.id}
-                initialPosition={{ x: 0, y: 0 }} // Bullets start at player position (center)
+                initialPosition={{ x: 0, y: 0 }}
                 targetPosition={{ x: bullet.targetX, y: bullet.targetY }}
               />
             ))}
-
-            {gameOver && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-30">
-                <div className="text-center bg-gray-800 p-8 rounded-lg">
-                  <h2 className="text-3xl font-bold text-red-500 mb-4">
-                    Game Over!
-                  </h2>
-                  <p className="text-white text-xl mb-4">
-                    Final Score: {score}
-                  </p>
-                  <button
-                    onClick={startGame}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                  >
-                    Play Again
-                  </button>
-                </div>
-              </div>
-            )}
           </>
-        )}
-
-        {!gameActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-30">
-            <div className="text-center bg-gray-800 p-8 rounded-lg">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Defender Game
-              </h2>
-              <p className="text-gray-300 mb-4">
-                Defend against incoming enemies!
-              </p>
-              <button
-                onClick={startGame}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Start Game
-              </button>
-            </div>
-          </div>
         )}
       </div>
     </div>

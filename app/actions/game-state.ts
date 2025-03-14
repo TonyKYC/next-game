@@ -35,7 +35,7 @@ export function createInitialGameState(): GameState {
     lastBulletFiredTime: 0,
     debugInfo: {
       enemiesInRange: 0,
-      closestEnemyDistance: Infinity,
+      closestEnemyDistance: 0,
       enemyPositions: [],
     },
   };
@@ -55,7 +55,7 @@ export function resetGameState(prevState: GameState): GameState {
     lastBulletFiredTime: 0,
     debugInfo: {
       enemiesInRange: 0,
-      closestEnemyDistance: Infinity,
+      closestEnemyDistance: 0,
       enemyPositions: [],
     },
   };

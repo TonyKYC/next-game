@@ -1,5 +1,5 @@
 import { EnemyType, getEnemyPosition } from "./enemy-actions";
-import { distanceFromOrigin, isInRange } from "./utils";
+import { distanceFromOrigin, isInRange } from "../lib/utils";
 
 export interface EnemyWithDistance {
   id: number;

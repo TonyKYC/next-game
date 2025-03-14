@@ -1,5 +1,5 @@
 import { EnemyType } from "./enemy-actions";
-import { calculateDistance } from "./utils";
+import { calculateDistance } from "../lib/utils";
 
 /**
  * Checks for collisions between enemies and the player

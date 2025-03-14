@@ -1,3 +1,12 @@
+import { twMerge } from "tailwind-merge";
+
+/**
+ * Merges multiple Tailwind CSS classes
+ */
+export const cn = (...classes: string[]) => {
+  return twMerge(classes);
+};
+
 /**
  * Calculates the distance between two points
  */

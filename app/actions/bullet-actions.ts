@@ -1,5 +1,5 @@
 import { EnemyType } from "./enemy-actions";
-import { isInRange } from "./utils";
+import { isInRange } from "../lib/utils";
 import { getEnemyPosition } from "./enemy-actions";
 
 // Define the bullet type for state management
