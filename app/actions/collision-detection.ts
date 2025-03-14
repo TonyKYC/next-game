@@ -1,5 +1,5 @@
 import { EnemyType } from "./enemy-actions";
-import { calculateDistance } from "../lib/utils";
+import { ENEMY } from "../config/game-config";
 
 /**
  * Checks for collisions between enemies and the player
@@ -20,9 +20,9 @@ export const checkPlayerCollisions = (enemies: EnemyType[]): boolean => {
     y: playerRect.top + playerRect.height / 2,
   };
 
-  // Collision threshold (half of player width + half of enemy width)
-  // Using a slightly larger threshold to ensure collisions are detected reliably
-  const collisionThreshold = playerRect.width / 2 + 5; // Adding 5px for enemy radius
+  // Collision threshold (half of player width + half of enemy width + padding)
+  const collisionThreshold =
+    (playerRect.width + ENEMY.SIZE.WIDTH) / 2 + ENEMY.COLLISION_PADDING;
   const collisionThresholdSquared = collisionThreshold * collisionThreshold;
 
   // Check each enemy for collision

@@ -1,6 +1,7 @@
 import { EnemyType } from "./enemy-actions";
 import { isInRange } from "../lib/utils";
 import { getEnemyPosition } from "./enemy-actions";
+import { BULLET } from "../config/game-config";
 
 // Define the bullet type for state management
 export interface BulletType {
@@ -119,8 +120,8 @@ export function checkBulletCollisions(
       const distanceSquared = dx * dx + dy * dy;
 
       // Collision threshold based on the combined size of bullet and enemy
-      // Using half of enemy size for tighter collisions
-      const collisionThreshold = (bulletRect.width + enemyRect.width) / 3;
+      const collisionThreshold =
+        (bulletRect.width + enemyRect.width) / BULLET.COLLISION_DIVISOR;
       const collisionThresholdSquared = collisionThreshold * collisionThreshold;
 
       if (distanceSquared <= collisionThresholdSquared) {

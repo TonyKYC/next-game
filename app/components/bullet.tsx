@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { BULLET } from "../config/game-config";
 
 interface BulletProps {
-  id: number | string;
+  id: number;
   initialPosition: { x: number; y: number };
   targetPosition: { x: number; y: number };
 }
@@ -25,13 +26,18 @@ export default function Bullet({
   const dx = targetPosition.x - initialPosition.x;
   const dy = targetPosition.y - initialPosition.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const duration = Math.min(0.5, distance / 600); // Max 0.5 seconds
+  const duration = Math.min(BULLET.MAX_DURATION, distance / BULLET.SPEED);
 
   return (
     <>
       {/* Bullet trail */}
       <motion.div
-        className="absolute w-2 h-2 rounded-full bg-yellow-300/50"
+        className="absolute rounded-full bg-yellow-300/50"
+        style={{
+          width: BULLET.SIZE.WIDTH / 2,
+          height: BULLET.SIZE.HEIGHT / 2,
+          zIndex: 14,
+        }}
         initial={{
           x: initialPosition.x,
           y: initialPosition.y,
@@ -48,33 +54,36 @@ export default function Bullet({
           duration: duration,
           ease: "linear",
         }}
-        style={{ zIndex: 14 }}
       />
 
       {/* Main bullet */}
       <motion.div
         id={`bullet-${id}`}
-        data-bullet-id={id} // Add data attribute for collision detection
-        className="absolute w-4 h-4 rounded-full bg-yellow-400 shadow-lg shadow-yellow-300"
+        data-bullet-id={id}
+        className="absolute rounded-full bg-yellow-400 shadow-lg shadow-yellow-300"
+        style={{
+          width: BULLET.SIZE.WIDTH,
+          height: BULLET.SIZE.HEIGHT,
+          zIndex: 15,
+        }}
         initial={{
           x: initialPosition.x,
           y: initialPosition.y,
           opacity: 1,
           scale: 0.5,
-          rotate: angle, // Add rotation based on trajectory
+          rotate: angle,
         }}
         animate={{
           x: targetPosition.x,
           y: targetPosition.y,
           opacity: 1,
           scale: 1,
-          rotate: angle, // Maintain rotation during animation
+          rotate: angle,
         }}
         transition={{
           duration: duration,
           ease: "linear",
         }}
-        style={{ zIndex: 15 }} // Higher z-index to ensure visibility
       />
     </>
   );

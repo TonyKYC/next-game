@@ -1,3 +1,5 @@
+import { GAME_AREA, PERFORMANCE } from "../config/game-config";
+
 // Types
 export interface EnemyType {
   id: number;
@@ -36,11 +38,11 @@ export const updatePlayerPositionCache = () => {
     };
   }
 
-  // Set timeout to clear the cache after 100ms
+  // Set timeout to clear the cache
   playerCacheTimeout = window.setTimeout(() => {
     cachedPlayerCenter = null;
     playerCacheTimeout = null;
-  }, 100);
+  }, PERFORMANCE.POSITION_UPDATE_INTERVAL);
 };
 
 /**
@@ -49,7 +51,9 @@ export const updatePlayerPositionCache = () => {
 export const generateRandomPosition = () => {
   const angle = Math.random() * Math.PI * 2;
   // Make sure enemies spawn outside the visible area
-  const distance = Math.max(window.innerWidth, window.innerHeight) * 0.75;
+  const distance =
+    Math.max(window.innerWidth, window.innerHeight) *
+    GAME_AREA.SPAWN_DISTANCE_MULTIPLIER;
 
   return {
     x: Math.cos(angle) * distance,

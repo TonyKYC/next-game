@@ -23,17 +23,13 @@ import { checkPlayerCollisions } from "./actions/collision-detection";
 import { trackEnemiesInRange } from "./actions/range-detection";
 import GameUserInterface from "./components/game-user-interface";
 import type { GameState } from "./types/game-state";
+import { PLAYER, BULLET, ENEMY } from "./config/game-config";
 
 interface GameProps {
   onEndGame: (score: number) => void;
 }
 
 export default function Game({ onEndGame }: GameProps) {
-  // Define the shooting range
-  const SHOOTING_RANGE = 200;
-  // Define the cooldown between shots (in ms)
-  const BULLET_COOLDOWN = 500;
-
   // Initialize state using our utility functions
   const [state, setState] = useState(createInitialGameState());
   const gameAreaRef = useRef(null);
@@ -41,7 +37,7 @@ export default function Game({ onEndGame }: GameProps) {
   const lastUpdateTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
   const fpsRef = useRef<number>(0);
-  const stateRef = useRef(state); // Reference to current state to avoid closure issues
+  const stateRef = useRef(state);
 
   // Destructure state for easier access
   const {
@@ -171,7 +167,10 @@ export default function Game({ onEndGame }: GameProps) {
     if (currentEnemies.length === 0) return;
 
     // Track enemies in range
-    const rangeResult = trackEnemiesInRange(currentEnemies, SHOOTING_RANGE);
+    const rangeResult = trackEnemiesInRange(
+      currentEnemies,
+      PLAYER.SHOOTING_RANGE
+    );
 
     // Check for collisions between player and enemies
     const playerCollision = checkPlayerCollisions(currentEnemies);
@@ -217,23 +216,23 @@ export default function Game({ onEndGame }: GameProps) {
       );
     }
 
-    // Clean up bullets that are off-screen or too old (2 seconds)
+    // Clean up bullets that are too old
     const currentTime = Date.now();
     updatedBullets = updatedBullets.filter((bullet) => {
       const bulletAge = currentTime - bullet.createdAt;
-      return bulletAge < 2000; // Bullets live for max 2 seconds
+      return bulletAge < BULLET.LIFETIME;
     });
 
     // Fire a new bullet if enemies are in range and cooldown has passed
     let newBullet: BulletType | null = null;
     if (
       rangeResult.enemiesInRange > 0 &&
-      currentTime - currentState.lastBulletFiredTime >= BULLET_COOLDOWN
+      currentTime - currentState.lastBulletFiredTime >= BULLET.COOLDOWN
     ) {
       // Find the closest enemy in range
       const closestEnemyData = findClosestEnemyInRange(
         currentEnemies,
-        SHOOTING_RANGE
+        PLAYER.SHOOTING_RANGE
       );
 
       if (closestEnemyData) {
@@ -281,7 +280,6 @@ export default function Game({ onEndGame }: GameProps) {
     if (!gameActive || gameOver) return;
 
     const spawnInterval = setInterval(() => {
-      // Generate a random position outside the visible area
       const position = generateRandomPosition();
       const id = Date.now() + Math.random();
 
@@ -301,7 +299,7 @@ export default function Game({ onEndGame }: GameProps) {
           },
         ],
       }));
-    }, 2000);
+    }, ENEMY.SPAWN_INTERVAL);
 
     return () => clearInterval(spawnInterval);
   }, [gameActive, gameOver]);
@@ -314,7 +312,7 @@ export default function Game({ onEndGame }: GameProps) {
           fpsCount: fpsRef.current,
         }}
         onEndGame={handleEndGame}
-        shootingRange={SHOOTING_RANGE}
+        shootingRange={PLAYER.SHOOTING_RANGE}
       />
 
       {/* Game Area */}
@@ -324,13 +322,13 @@ export default function Game({ onEndGame }: GameProps) {
       >
         {gameActive && (
           <>
-            <RangeIndicator range={SHOOTING_RANGE} />
+            <RangeIndicator range={PLAYER.SHOOTING_RANGE} />
             <Player />
 
             {enemies.map((enemy) => {
               const position = getEnemyPosition(enemy.id);
               const inRange = position
-                ? isInRange(position.x, position.y, SHOOTING_RANGE)
+                ? isInRange(position.x, position.y, PLAYER.SHOOTING_RANGE)
                 : false;
 
               return (
