@@ -14,6 +14,14 @@ export default function Enemy({
   initialPosition,
   targetPosition,
 }: EnemyProps) {
+  // Calculate distance to target
+  const dx = targetPosition.x - initialPosition.x;
+  const dy = targetPosition.y - initialPosition.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // Calculate duration based on speed (distance / speed = time)
+  const duration = distance / ENEMY.MOVEMENT_SPEED;
+
   return (
     <motion.div
       id={`enemy-${id}`}
@@ -34,8 +42,8 @@ export default function Enemy({
         rotate: 180,
       }}
       transition={{
-        x: { duration: ENEMY.MOVEMENT_DURATION, ease: "linear" },
-        y: { duration: ENEMY.MOVEMENT_DURATION, ease: "linear" },
+        x: { duration, ease: "linear" },
+        y: { duration, ease: "linear" },
         rotate: { duration: 2, repeat: Number.POSITIVE_INFINITY },
       }}
     />
