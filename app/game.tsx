@@ -20,7 +20,7 @@ import { createInitialGameState, resetGameState } from "./actions/game-state";
 import { trackEnemiesInRange } from "./actions/range-detection";
 import { BasicEnemy, FastEnemy } from "./components/enemies";
 import GameUserInterface from "./components/game-ui";
-import { BULLET, ENEMY, PLAYER } from "./config/game-config";
+import { BULLET, ENEMY, PLAYER, ENEMY_TYPES } from "./config/game-config";
 import { isInRange } from "./lib/utils";
 
 interface GameProps {
@@ -198,8 +198,10 @@ export default function Game({ onEndGame }: GameProps) {
         bulletCollisions.map(([bulletId, _]) => bulletId)
       );
 
-      // Update score
-      scoreIncrease = enemyIdsToRemove.size * 10;
+      // Calculate score based on enemy types
+      scoreIncrease = currentEnemies
+        .filter((enemy) => enemyIdsToRemove.has(enemy.id))
+        .reduce((total, enemy) => total + ENEMY_TYPES[enemy.type].POINTS, 0);
 
       // Filter out hit enemies and bullets
       updatedEnemies = updatedEnemies.filter(
