@@ -3,21 +3,30 @@
 import { useState, useEffect, useRef } from "react";
 import Player from "@/components/player";
 import Enemy from "@/components/enemy";
+import Bullet from "@/components/bullet";
 import RangeIndicator from "@/components/range-indicator";
 import {
   EnemyType,
   generateRandomPosition,
   getEnemyPosition,
   updatePlayerPositionCache,
-} from "../actions/enemy-actions";
-import { createInitialGameState, resetGameState } from "../actions/game-state";
-import { isInRange } from "../actions/utils";
-import { checkPlayerCollisions } from "../actions/collision-detection";
-import { trackEnemiesInRange } from "../actions/range-detection";
+} from "./actions/enemy-actions";
+import {
+  BulletType,
+  createBullet,
+  findClosestEnemyInRange,
+  checkBulletCollisions,
+} from "./actions/bullet-actions";
+import { createInitialGameState, resetGameState } from "./actions/game-state";
+import { isInRange } from "./actions/utils";
+import { checkPlayerCollisions } from "./actions/collision-detection";
+import { trackEnemiesInRange } from "./actions/range-detection";
 
 export default function Game() {
   // Define the shooting range
   const SHOOTING_RANGE = 200;
+  // Define the cooldown between shots (in ms)
+  const BULLET_COOLDOWN = 500;
 
   // Initialize state using our utility functions
   const [state, setState] = useState(createInitialGameState());
@@ -29,8 +38,16 @@ export default function Game() {
   const stateRef = useRef(state); // Reference to current state to avoid closure issues
 
   // Destructure state for easier access
-  const { gameActive, score, enemies, gameAreaSize, gameOver, debugInfo } =
-    state;
+  const {
+    gameActive,
+    score,
+    enemies,
+    bullets,
+    gameAreaSize,
+    gameOver,
+    lastBulletFiredTime,
+    debugInfo,
+  } = state;
 
   // Keep stateRef in sync with state
   useEffect(() => {
@@ -87,7 +104,7 @@ export default function Game() {
       updatePlayerPositionCache();
 
       // Update game state
-      updateGameState(deltaTime);
+      updateGameState(deltaTime, timestamp);
 
       // Update FPS counter every second
       frameCountRef.current++;
@@ -123,8 +140,10 @@ export default function Game() {
   }, [gameActive, gameOver, enemies.length]);
 
   // Game state update logic
-  const updateGameState = (deltaTime: number) => {
-    const currentEnemies = stateRef.current.enemies;
+  const updateGameState = (deltaTime: number, timestamp: number) => {
+    const currentState = stateRef.current;
+    const currentEnemies = currentState.enemies;
+    const currentBullets = currentState.bullets;
 
     // Skip update if no enemies
     if (currentEnemies.length === 0) return;
@@ -132,27 +151,101 @@ export default function Game() {
     // Track enemies in range
     const rangeResult = trackEnemiesInRange(currentEnemies, SHOOTING_RANGE);
 
-    // Check for collisions
-    const collision = checkPlayerCollisions(currentEnemies);
+    // Check for collisions between player and enemies
+    const playerCollision = checkPlayerCollisions(currentEnemies);
 
-    if (collision) {
-      console.log("COLLISION DETECTED - GAME OVER");
+    if (playerCollision) {
+      console.log("PLAYER COLLISION DETECTED - GAME OVER");
+      setState((prev) => ({ ...prev, gameOver: true }));
+      return;
     }
 
-    // Update state based on results - only if changed to avoid re-renders
-    setState((prev) => {
-      // Skip update if state hasn't changed
-      if (
-        collision === prev.gameOver &&
-        rangeResult.enemiesInRange === prev.debugInfo.enemiesInRange &&
-        rangeResult.closestEnemyDistance === prev.debugInfo.closestEnemyDistance
-      ) {
-        return prev; // Return unchanged state to avoid re-render
+    // Check for bullet-enemy collisions
+    const bulletCollisions = checkBulletCollisions(
+      currentBullets,
+      currentEnemies
+    );
+    let scoreIncrease = 0;
+    let updatedEnemies = [...currentEnemies];
+    let updatedBullets = [...currentBullets];
+
+    // Handle bullet-enemy collisions
+    if (bulletCollisions.length > 0) {
+      // Get unique enemies and bullets involved in collisions
+      const enemyIdsToRemove = new Set(
+        bulletCollisions.map(([_, enemyId]) => enemyId)
+      );
+      const bulletIdsToRemove = new Set(
+        bulletCollisions.map(([bulletId, _]) => bulletId)
+      );
+
+      // Update score
+      scoreIncrease = enemyIdsToRemove.size * 10;
+
+      // Filter out hit enemies and bullets
+      updatedEnemies = updatedEnemies.filter(
+        (enemy) => !enemyIdsToRemove.has(enemy.id)
+      );
+      updatedBullets = updatedBullets.filter(
+        (bullet) => !bulletIdsToRemove.has(bullet.id)
+      );
+
+      console.log(
+        `Bullet collisions: ${bulletCollisions.length}, Score +${scoreIncrease}`
+      );
+    }
+
+    // Clean up bullets that are off-screen or too old (2 seconds)
+    const currentTime = Date.now();
+    updatedBullets = updatedBullets.filter((bullet) => {
+      const bulletAge = currentTime - bullet.createdAt;
+      return bulletAge < 2000; // Bullets live for max 2 seconds
+    });
+
+    // Fire a new bullet if enemies are in range and cooldown has passed
+    let newBullet: BulletType | null = null;
+    if (
+      rangeResult.enemiesInRange > 0 &&
+      currentTime - currentState.lastBulletFiredTime >= BULLET_COOLDOWN
+    ) {
+      // Find the closest enemy in range
+      const closestEnemyData = findClosestEnemyInRange(
+        currentEnemies,
+        SHOOTING_RANGE
+      );
+
+      if (closestEnemyData) {
+        // Create a new bullet targeting this enemy
+        newBullet = createBullet(
+          closestEnemyData.enemy,
+          closestEnemyData.position
+        );
+        console.log(
+          `Firing bullet at enemy ${
+            closestEnemyData.enemy.id
+          } at distance ${Math.round(closestEnemyData.distance)}`
+        );
       }
+    }
+
+    // Update state based on results - only if there are actual changes
+    setState((prev) => {
+      // Add the new bullet if one was created
+      const finalBullets = newBullet
+        ? [...updatedBullets, newBullet]
+        : updatedBullets;
+
+      // Update last bullet fired time if a new bullet was created
+      const newLastBulletFiredTime = newBullet
+        ? currentTime
+        : prev.lastBulletFiredTime;
 
       return {
         ...prev,
-        gameOver: collision ? true : prev.gameOver,
+        enemies: updatedEnemies,
+        bullets: finalBullets,
+        score: prev.score + scoreIncrease,
+        lastBulletFiredTime: newLastBulletFiredTime,
         debugInfo: {
           ...prev.debugInfo,
           ...rangeResult,
@@ -215,7 +308,8 @@ export default function Game() {
         {gameActive && (
           <div className="text-white text-sm bg-gray-800/70 px-4 py-2 rounded max-w-md overflow-auto">
             <div>
-              Enemies: {enemies.length} | FPS: {fpsRef.current}
+              Enemies: {enemies.length} | Bullets: {bullets.length} | FPS:{" "}
+              {fpsRef.current}
             </div>
             <div>
               In Range:{" "}
@@ -287,6 +381,16 @@ export default function Game() {
                 </div>
               );
             })}
+
+            {/* Render bullets */}
+            {bullets.map((bullet) => (
+              <Bullet
+                key={bullet.id}
+                id={bullet.id}
+                initialPosition={{ x: 0, y: 0 }} // Bullets start at player position (center)
+                targetPosition={{ x: bullet.targetX, y: bullet.targetY }}
+              />
+            ))}
 
             {gameOver && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-30">

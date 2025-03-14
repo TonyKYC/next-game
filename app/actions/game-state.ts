@@ -1,11 +1,14 @@
 import { EnemyType } from "./enemy-actions";
+import { BulletType } from "./bullet-actions";
 
 export interface GameState {
   gameActive: boolean;
+  gameOver: boolean;
   score: number;
   enemies: EnemyType[];
+  bullets: BulletType[];
   gameAreaSize: { width: number; height: number };
-  gameOver: boolean;
+  lastBulletFiredTime: number;
   debugInfo: {
     enemiesInRange: number;
     closestEnemyDistance: number;
@@ -19,28 +22,41 @@ export interface GameState {
 }
 
 /**
- * Creates the initial game state
+ * Creates the initial game state with default values
  */
-export const createInitialGameState = (): GameState => ({
-  gameActive: false,
-  score: 0,
-  enemies: [],
-  gameAreaSize: { width: 0, height: 0 },
-  gameOver: false,
-  debugInfo: {
-    enemiesInRange: 0,
-    closestEnemyDistance: 0,
-    enemyPositions: [],
-  },
-});
+export function createInitialGameState(): GameState {
+  return {
+    gameActive: false,
+    gameOver: false,
+    score: 0,
+    enemies: [],
+    bullets: [],
+    gameAreaSize: { width: 0, height: 0 },
+    lastBulletFiredTime: 0,
+    debugInfo: {
+      enemiesInRange: 0,
+      closestEnemyDistance: Infinity,
+      enemyPositions: [],
+    },
+  };
+}
 
 /**
- * Resets the game state for a new game
+ * Resets the game state to start a new game
  */
-export const resetGameState = (state: GameState): GameState => ({
-  ...state,
-  gameActive: true,
-  score: 0,
-  enemies: [],
-  gameOver: false,
-});
+export function resetGameState(prevState: GameState): GameState {
+  return {
+    ...prevState,
+    gameActive: true,
+    gameOver: false,
+    score: 0,
+    enemies: [],
+    bullets: [],
+    lastBulletFiredTime: 0,
+    debugInfo: {
+      enemiesInRange: 0,
+      closestEnemyDistance: Infinity,
+      enemyPositions: [],
+    },
+  };
+}
